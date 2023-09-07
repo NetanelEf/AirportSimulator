@@ -1,0 +1,194 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/3.1.11/signalr.min.js"></script>
+
+<div class="container" style="display:flex">
+    <div class="container">
+        <h1 class="display-4 text-center" style="margin-bottom: 25px;">Arriving flights</h1>
+        <div class="container" id="arrivingFlights" style="flex:1"></div>
+    </div>
+    <div class="container">
+        <h1 class="display-4 text-center" style="margin-bottom: 25px;">Parking flights</h1>
+        <div class="container" id="waitingFlights" style="flex:1"></div>
+    </div>
+    <div class="container">
+        <h1 class="display-4 text-center" style="margin-bottom: 25px;">Departing flights</h1>
+        <div class="container" id="departingFlights" style="flex:1"></div>
+    </div>
+</div>
+
+<div class="text-center" id="waitingFlights" style="margin-top: 100px;">
+    <h1 class="display-4" style="margin-bottom: 25px;">Waiting Queue</h1>
+    <table class="table table-bordered w-50 mx-auto">
+        <thead>
+            <tr>
+                <th scope="col">PlaneID</th>
+            </tr>
+        </thead>
+        <tbody id="waitingTableBody">
+        </tbody>
+    </table>
+</div>
+
+<div id="flightHistoryTable" style="margin-top: 100px;">
+    <h1 class="display-4 text-center" style="margin-bottom: 25px;">Flight Records</h1>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">Plane ID</th>
+                <th scope="col">Plane Company</th>
+                <th scope="col">Departure City</th>
+                <th scope="col">Arrival City</th>
+                <th scope="col">Is Departing</th>
+                <th scope="col">Entry Time</th>
+                <th scope="col">Departure Time</th>
+            </tr>
+        </thead>
+        <tbody id="historyTableBody">
+        </tbody>
+    </table>
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var connection = new signalR.HubConnectionBuilder().withUrl("http://localhost:5155/flighthub").build();
+
+        connection.start().then(function () {
+            console.log("SignalR connection started successfully.");
+        }).catch(function (err) {
+            return console.error("Error starting SignalR connection:", err.toString());
+        });
+
+        connection.on("BroadcastSimulator", function (msg) {
+            displayFlightInformation(msg);
+        });
+
+        // Update the element every second
+        setInterval(function () {
+            // Make sure the connection is in the connected state before invoking
+            if (connection.state === signalR.HubConnectionState.Connected) {
+                connection.invoke("SendSimulator").catch(function (err) {
+                    console.error(err.toString());
+                });
+            }
+        }, 1000);
+
+        function displayFlightInformation(flightInformation) {
+            populateLocationList("arrivingFlights", flightInformation.arrivingFlights);
+            populateLocationList("waitingFlights", flightInformation.waitingFlights);
+            populateLocationList("departingFlights", flightInformation.departingFlights);
+        }
+
+        function populateLocationList(containerId, locationList) {
+            var container = document.getElementById(containerId);
+            container.classList = "card text-center";
+            container.innerHTML = "";
+
+            var locations = locationList._locations;
+
+            locations.forEach((location) => {
+                var locationElement = document.createElement("div");
+                locationElement.textContent = "Location: " + location.id;
+
+                var planesList = document.createElement("ul");
+                planesList.className = "list-group card-body";
+                location.planes.forEach((plane) => {
+                    var planeItem = document.createElement("li");
+                    planeItem.className = "list-group-item";
+
+                    var planeDiv = document.createElement("div");
+                    planeDiv.style.display = "flex";
+                    planeDiv.style.justifyContent = "space-between";
+
+                    var planeImg = document.createElement("img");
+                    planeImg.style.width = "10%";
+                    planeImg.src = "/images/planeEmoji.png";
+
+                    var planeInfoDiv = document.createElement("div");
+                    planeInfoDiv.textContent = "Plane ID: " + plane.planeID;
+                    planeInfoDiv.style.flex = "1";
+
+                    planeDiv.appendChild(planeImg); // Add image on the left
+                    planeDiv.appendChild(planeInfoDiv); // Add text on the right
+
+                    planeItem.appendChild(planeDiv);
+                    planesList.appendChild(planeItem);
+                });
+
+                locationElement.appendChild(planesList);
+                container.appendChild(locationElement);
+            });
+        }
+    });
+
+    setInterval(function () {
+        var apiUrl = `http://localhost:5155/api/airport/GetFlightHistory`;
+        var tableBody = document.getElementById("historyTableBody");
+
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Clear the existing table rows
+                while (tableBody.firstChild) {
+                    tableBody.removeChild(tableBody.firstChild);
+                }
+
+                // Populate the table with new data
+                data.forEach(flight => {
+                    var row = tableBody.insertRow();
+                    row.insertCell().textContent = flight.planeID;
+                    row.insertCell().textContent = flight.planeCompany;
+                    row.insertCell().textContent = flight.locationFrom;
+                    row.insertCell().textContent = flight.locationTo;
+                    row.insertCell().textContent = flight.isDeparting;
+                    row.insertCell().textContent = flight.entryTime;
+                    row.insertCell().textContent = flight.departTime;
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+            });
+    }, 1000);
+
+    setInterval(function () {
+        var apiUrl = `http://localhost:5155/api/airport/GetWaitingFlights`;
+        var requestData = {};
+        var tableBody = document.getElementById("waitingTableBody");
+
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    // Clear the existing table rows
+                    while (tableBody.firstChild) {
+                        tableBody.removeChild(tableBody.firstChild);
+                    }
+
+                    // Populate the table with new data
+                    data.forEach(flight => {
+                        var row = tableBody.insertRow();
+                        row.insertCell().textContent = flight.currPlaneID;
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    }, 1000);
+</script>
+<div class="align-self-center"></div>
