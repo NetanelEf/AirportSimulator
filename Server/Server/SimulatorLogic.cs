@@ -20,7 +20,7 @@ namespace Server
         private Process _landing, _departing, _waiting;
 
         public static Flights _flights { get; private set; }
-        public static FlightHub _hub { get; private set; }
+        //public static FlightHub _hub { get; private set; }
 
         /*
          Constructor that initializes the simulation with the locations and flight list
@@ -29,7 +29,7 @@ namespace Server
         public SimulatorLogic()
         {
             _service = new Service();
-            _hub = new FlightHub();
+            //_hub = new FlightHub();
 
             _landing = new Process()
             {
@@ -82,6 +82,9 @@ namespace Server
 
             EventAddFromWaiting addBackPlane = AddBackToWaiting;
             _service.HookFunction(addBackPlane);
+
+            EventSendSimulatorData sendSimData = FlightHub.SendSimulator;
+            _service.HookFunction(sendSimData);
         }
 
         #region SimulatorFunctions
@@ -181,7 +184,6 @@ namespace Server
                             context.FlightsAndLocations.Remove(context.FlightsAndLocations.First(item => item.CurrPlaneID == plane.PlaneID));
                             _flights.WaitingFlights._locations[i].Planes.RemoveAt(0);
                             context.SaveChanges();
-                            //flights.WaitingFlights._locations[i].Planes.Remove(flights.WaitingFlights._locations[i].Planes.ElementAt(0));
                         }
                     }
                 }
@@ -391,7 +393,7 @@ namespace Server
                     }
                 }
             }
-            return Enumerable.Empty<Plane>();
+            return Enumerable.Empty<Plane>().ToList();
         }
 
         public static IEnumerable<WaitingFlight> SendWaitingFlights(out bool success)
@@ -411,7 +413,7 @@ namespace Server
                     }
                 }
             }
-            return Enumerable.Empty<WaitingFlight>();
+            return Enumerable.Empty<WaitingFlight>().ToList();
         }
     }
     #endregion

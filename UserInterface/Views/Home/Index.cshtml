@@ -66,16 +66,6 @@
             displayFlightInformation(msg);
         });
 
-        // Update the element every second
-        setInterval(function () {
-            // Make sure the connection is in the connected state before invoking
-            if (connection.state === signalR.HubConnectionState.Connected) {
-                connection.invoke("SendSimulator").catch(function (err) {
-                    console.error(err.toString());
-                });
-            }
-        }, 1000);
-
         function displayFlightInformation(flightInformation) {
             populateLocationList("arrivingFlights", flightInformation.arrivingFlights);
             populateLocationList("waitingFlights", flightInformation.waitingFlights);

@@ -3,20 +3,26 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Server.Hubs
 {
-    //[HubName("FlightHub")]
     public sealed class FlightHub : Hub
     {
+        protected static IHubContext<FlightHub> _context;
+
+        public FlightHub(IHubContext<FlightHub> context)
+        {
+            _context = context;
+        }
+
         public async Task SendMessage()
         {
             if(SimulatorLogic._flights != null)
-                await Clients.All.SendAsync("ReceiveMessage", SimulatorLogic._flights.ToString());
+                await _context.Clients.All.SendAsync("ReceiveMessage", SimulatorLogic._flights.ToString());
         }
 
-        public async Task SendSimulator()
+        public static async Task SendSimulator()
         {
             // Call the broadcastSimulator method to update clients.
-            if (SimulatorLogic._flights != null)
-                await Clients.All.SendAsync("BroadcastSimulator", SimulatorLogic._flights);
+            if (_context != null && SimulatorLogic._flights != null)
+                await _context.Clients.All.SendAsync("BroadcastSimulator", SimulatorLogic._flights);
         }
     }
 }

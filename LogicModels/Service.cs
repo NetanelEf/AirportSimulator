@@ -15,7 +15,7 @@ namespace LogicModels
     public delegate void EventRunSimulation(object sender, EventArgs e, Flights flights);
     public delegate void EventWaiting(object sender, EventArgs e, Flights flights);
     public delegate void EventAddFromWaiting(object sender, EventArgs e);
-    public delegate void EventSendSimulatorData(object sender, EventArgs e);
+    public delegate Task EventSendSimulatorData();
     public class Service
     {
         public Service()
@@ -34,7 +34,7 @@ namespace LogicModels
             }
         }
 
-        public async void HookFunction(EventWaiting addEvent, Flights flights) //Task adds planes from waiting spot in simulator to waiting queue
+        public async void HookFunction(EventWaiting addEvent, Flights flights) //Task adds planes from waiting spot in simulator to waiting queue and back to airport
         {
             while (true)
             {
@@ -58,6 +58,15 @@ namespace LogicModels
             {
                 simulation.Invoke(this, EventArgs.Empty ,flights);
                 await Task.Delay(2000);
+            }
+        }
+
+        public async void HookFunction(EventSendSimulatorData simulation) // Task that sends simulation data
+        {
+            while (true)
+            {
+                simulation.Invoke();
+                await Task.Delay(1000);
             }
         }
     }

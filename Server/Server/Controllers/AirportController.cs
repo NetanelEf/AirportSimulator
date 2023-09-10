@@ -17,10 +17,12 @@ namespace Server.Controllers
     {
         private AirportContext _context { get; set; }
         private readonly IHubContext<FlightHub> _flightHub;
+        //private readonly SimulatorLogic _simulatorLogic;
         public AirportController(AirportContext contx, IHubContext<FlightHub> hub)
         {
             _context = contx;
             _flightHub = hub;
+            //_simulatorLogic = new SimulatorLogic(_flightHub);
         }
 
         [HttpGet]

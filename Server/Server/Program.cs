@@ -1,4 +1,5 @@
 using LogicModels;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Server;
